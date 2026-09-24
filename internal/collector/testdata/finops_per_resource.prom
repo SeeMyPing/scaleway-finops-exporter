@@ -1,0 +1,7 @@
+# HELP scaleway_finops_charge_euros Raw charges of the billing period so far from the FinOps API, in euros. Series above --finops.max-series are aggregated under sku="other".
+# TYPE scaleway_finops_charge_euros gauge
+scaleway_finops_charge_euros{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000",project_id="aaaaaaaa-0000-4000-8000-000000000001",project_name="production",resource_id="bbbbbbbb-0000-4000-8000-000000000001",resource_name="web-1",sku="/compute/dev1_s/run_par1"} 0.35
+scaleway_finops_charge_euros{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000",project_id="aaaaaaaa-0000-4000-8000-000000000001",project_name="production",resource_id="bbbbbbbb-0000-4000-8000-000000000002",resource_name="",sku="/compute/dev1_s/run_par1"} 1.05
+# HELP scaleway_finops_folded_series Number of series aggregated under sku="other" at the last refresh because of --finops.max-series.
+# TYPE scaleway_finops_folded_series gauge
+scaleway_finops_folded_series{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000"} 0

@@ -25,6 +25,7 @@ import (
 	"github.com/SeeMyPing/scaleway-finops-exporter/internal/scaleway"
 	"github.com/SeeMyPing/scaleway-finops-exporter/internal/server"
 	"github.com/SeeMyPing/scaleway-finops-exporter/internal/source/billing"
+	"github.com/SeeMyPing/scaleway-finops-exporter/internal/source/finops"
 )
 
 func main() {
@@ -77,6 +78,11 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 
 	if cfg.Billing.Enabled {
 		if err := setupBilling(w, cfg, client); err != nil {
+			return err
+		}
+	}
+	if cfg.FinOps.Enabled {
+		if err := setupFinOps(w, cfg, client); err != nil {
 			return err
 		}
 	}
@@ -165,6 +171,38 @@ func setupBilling(w *wiring, cfg *config.Config, client *scaleway.Client) error 
 	}
 	if err := w.reg.Register(collector.NewBilling(r)); err != nil {
 		return fmt.Errorf("registering billing collector: %w", err)
+	}
+	return nil
+}
+
+func setupFinOps(w *wiring, cfg *config.Config, client *scaleway.Client) error {
+	limitExceeded := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "scaleway_finops_series_limit_exceeded_total",
+		Help: "Number of billing period refreshes whose charge series exceeded --finops.max-series.",
+	})
+	if err := w.reg.Register(limitExceeded); err != nil {
+		return fmt.Errorf("registering FinOps limit counter: %w", err)
+	}
+
+	src, err := finops.New(scaleway.NewFinOps(client), finops.Options{
+		OrganizationID:  client.OrganizationID,
+		ProjectIDs:      cfg.Scaleway.ProjectIDs,
+		LookbackPeriods: cfg.FinOps.LookbackPeriods,
+		PerResource:     cfg.FinOps.PerResource,
+		MaxSeries:       cfg.FinOps.MaxSeries,
+		SkippedCharges:  w.metrics.ErrorCounter("finops", finops.ReasonUnexpectedCurrency),
+		LimitExceeded:   limitExceeded,
+		Logger:          w.logger.With("data_source", "finops"),
+	})
+	if err != nil {
+		return err
+	}
+	r, err := addSource(w, "finops", cfg.FinOps.Source, src.Fetch)
+	if err != nil {
+		return err
+	}
+	if err := w.reg.Register(collector.NewFinOps(r, cfg.FinOps.PerResource)); err != nil {
+		return fmt.Errorf("registering FinOps collector: %w", err)
 	}
 	return nil
 }

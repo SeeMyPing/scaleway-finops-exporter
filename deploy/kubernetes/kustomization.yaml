@@ -15,4 +15,5 @@ resources:
   - servicemonitor.yaml
 images:
   - name: ghcr.io/seemyping/scaleway-finops-exporter
-    newTag: latest # pin a released version, for example v0.1.0
+    # edge follows main; pin a release (for example 0.1.0) or a digest in production.
+    newTag: edge

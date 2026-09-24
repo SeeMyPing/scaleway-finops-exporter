@@ -1,6 +1,6 @@
 # GoReleaser configuration: binaries, archives, checksums, SBOMs and keyless
-# signatures. Container images are built by the release workflow with the
-# repository Dockerfile, so that CI and releases share a single image recipe.
+# signatures. Container images are built by .github/workflows/image.yml with the
+# repository Dockerfile, so that CI, main and releases share one image recipe.
 version: 2
 
 project_name: scaleway-finops-exporter

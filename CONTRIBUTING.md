@@ -42,6 +42,9 @@ in an issue without checking it for identifiers.
 - Keep pull requests focused. The CI must be green: lint, race tests with at
   least 80 % coverage on `internal/`, govulncheck, promtool checks, image
   build and scan.
+- `main` is protected by the rulesets in [`.github/rulesets`](.github/rulesets):
+  every change goes through a pull request approved by the maintainer
+  ([CODEOWNERS](.github/CODEOWNERS)), who is also the only one able to merge.
 
 ## Releases
 

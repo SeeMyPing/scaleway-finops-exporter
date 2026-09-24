@@ -1,0 +1,4 @@
+# Every change needs the approval of the maintainer. Combined with the
+# "Require review from Code Owners" rule of the main-branch ruleset, only
+# @SeeMyPing can approve pull requests.
+* @SeeMyPing

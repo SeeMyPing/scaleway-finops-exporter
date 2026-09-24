@@ -88,7 +88,7 @@ linters:
     sloglint:
       no-mixed-args: true
       kv-only: false
-      attr-only: true
+      attr-only: false
       static-msg: true
       key-naming-case: snake
     wrapcheck:
@@ -127,7 +127,8 @@ formatters:
     - goimports
   settings:
     gofumpt:
-      extra-rules: true
+      extra:
+        group-params: true
     goimports:
       local-prefixes:
         - github.com/SeeMyPing/scaleway-finops-exporter

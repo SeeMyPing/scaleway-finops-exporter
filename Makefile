@@ -28,6 +28,9 @@ GOFUMPT_VERSION       ?= v0.12.0
 GOLANGCI_LINT ?= golangci-lint
 GOVULNCHECK   ?= govulncheck
 PROMTOOL      ?= promtool
+KUSTOMIZE     ?= kustomize
+KUBECONFORM   ?= kubeconform
+CRD_SCHEMAS   := https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
 
 .DEFAULT_GOAL := help
 
@@ -95,6 +98,13 @@ rules-test: ## Validate and unit test the Prometheus alerting rules
 	$(PROMTOOL) check rules deploy/prometheus/rules.yml
 	$(PROMTOOL) test rules deploy/prometheus/rules_test.yml
 
+.PHONY: manifests-check
+manifests-check: ## Validate the Kubernetes manifests and the Grafana dashboard JSON
+	$(KUSTOMIZE) build deploy/kubernetes | $(KUBECONFORM) -strict -summary \
+		-schema-location default -schema-location '$(CRD_SCHEMAS)'
+	$(KUBECONFORM) -strict -summary deploy/kubernetes/secret.example.yaml
+	python3 -m json.tool deploy/grafana/scaleway-finops.json > /dev/null
+
 .PHONY: docker
 docker: ## Build the container image for the local platform
 	docker build \
@@ -105,7 +115,7 @@ docker: ## Build the container image for the local platform
 		-t $(IMAGE):$(VERSION) .
 
 .PHONY: ci
-ci: fmt-check lint cover vuln metrics-check rules-test build ## Run everything the CI runs (except image build/scan)
+ci: fmt-check lint cover vuln metrics-check rules-test manifests-check build ## Run everything the CI runs (except image build/scan)
 
 .PHONY: clean
 clean: ## Remove build and coverage artifacts

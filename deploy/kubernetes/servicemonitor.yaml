@@ -1,0 +1,16 @@
+# Requires the Prometheus Operator CRDs.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: scaleway-finops-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: scaleway-finops-exporter
+  endpoints:
+    - port: http-metrics
+      path: /metrics
+      # Data changes hourly at most. Keep the interval under the 5m lookback
+      # of Prometheus so that instant queries never see gaps.
+      interval: 2m
+      scrapeTimeout: 30s

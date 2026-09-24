@@ -1,0 +1,231 @@
+# Unit tests for rules.yml: promtool test rules deploy/prometheus/rules_test.yml
+#
+# Test time starts at the Unix epoch, so the current billing period is 1970-01
+# (31 days). The budget is the default of 1000 EUR. Series are sampled at most
+# every 5 minutes: with sparser samples, the 5 minute lookback would hide them.
+rule_files:
+  - rules.yml
+
+evaluation_interval: 5m
+
+tests:
+  # Budget, forecast and burn rate. Consumption grows by 3 EUR per hour
+  # (0.125 EUR every 5 minutes on each of two projects; binary-exact steps keep
+  # the sums exact), i.e. 72 EUR per day, above twice the daily budget (66.67).
+  - interval: 5m
+    input_series:
+      - series: 'scaleway_billing_period_info{billing_period="1970-01",offset="0"}'
+        values: '1x9600'
+      - series: 'scaleway_billing_period_start_timestamp_seconds{billing_period="1970-01"}'
+        values: '0x9600'
+      - series: 'scaleway_billing_period_end_timestamp_seconds{billing_period="1970-01"}'
+        values: '2678400x9600'
+      - series: 'scaleway_billing_consumption_euros{organization_id="org",project_id="p1",billing_period="1970-01"}'
+        values: '0+0.125x9600'
+      - series: 'scaleway_billing_consumption_euros{organization_id="org",project_id="p2",billing_period="1970-01"}'
+        values: '0+0.125x9600'
+      # A previous period far above the budget must be ignored.
+      - series: 'scaleway_billing_consumption_euros{organization_id="org",project_id="p1",billing_period="1969-12"}'
+        values: '5000x9600'
+
+    promql_expr_test:
+      - expr: scaleway:billing_consumption_euros:current_period
+        eval_time: 100h
+        exp_samples:
+          - labels: 'scaleway:billing_consumption_euros:current_period{organization_id="org"}'
+            value: 300
+      - expr: scaleway:billing_period_elapsed:ratio
+        eval_time: 372h # half of 31 days
+        exp_samples:
+          - labels: 'scaleway:billing_period_elapsed:ratio'
+            value: 0.5
+      - expr: scaleway:billing_consumption_euros:projected_period_end
+        eval_time: 372h
+        exp_samples:
+          - labels: 'scaleway:billing_consumption_euros:projected_period_end{organization_id="org"}'
+            value: 2232 # 1116 EUR at mid-period
+
+    alert_rule_test:
+      # 300 EUR after 100 h: within the budget, and too early in the month to forecast.
+      - eval_time: 100h
+        alertname: ScalewayBudgetExceeded
+        exp_alerts: []
+      - eval_time: 100h
+        alertname: ScalewayBudgetForecastExceeded
+        exp_alerts: []
+      # After 20 % of the period (148.8 h) plus the 6 h hold, the forecast fires.
+      - eval_time: 160h
+        alertname: ScalewayBudgetForecastExceeded
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              organization_id: org
+            exp_annotations:
+              summary: Scaleway consumption is on track to exceed the monthly budget
+              description: At the current pace, organization org will consume about 2232 EUR (untaxed) by the end of the billing period.
+      # 1000 EUR are crossed after 333.3 h, then the alert holds for 1 h.
+      - eval_time: 334h
+        alertname: ScalewayBudgetExceeded
+        exp_alerts: []
+      - eval_time: 336h
+        alertname: ScalewayBudgetExceeded
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              organization_id: org
+            exp_annotations:
+              summary: Scaleway monthly budget exceeded
+              description: Organization org has consumed 1008.00 EUR (untaxed) this billing period, above the monthly budget.
+      # 72 EUR per day > 66.67 EUR, once a full day of data exists and 3 h have passed.
+      - eval_time: 20h
+        alertname: ScalewayCostBurnRateHigh
+        exp_alerts: []
+      - eval_time: 30h
+        alertname: ScalewayCostBurnRateHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              organization_id: org
+            exp_annotations:
+              summary: Scaleway daily spend is more than twice the daily budget
+              description: Organization org consumed 72.00 EUR (untaxed) over the last 24 hours.
+
+  # A modest consumption (0.6 EUR per hour) fires nothing.
+  - interval: 5m
+    input_series:
+      - series: 'scaleway_billing_period_info{billing_period="1970-01",offset="0"}'
+        values: '1x8420'
+      - series: 'scaleway_billing_period_start_timestamp_seconds{billing_period="1970-01"}'
+        values: '0x8420'
+      - series: 'scaleway_billing_period_end_timestamp_seconds{billing_period="1970-01"}'
+        values: '2678400x8420'
+      - series: 'scaleway_billing_consumption_euros{organization_id="org",project_id="p1",billing_period="1970-01"}'
+        values: '0+0.05x8420'
+    alert_rule_test:
+      - eval_time: 700h
+        alertname: ScalewayBudgetExceeded
+        exp_alerts: []
+      - eval_time: 700h
+        alertname: ScalewayBudgetForecastExceeded
+        exp_alerts: []
+      - eval_time: 700h
+        alertname: ScalewayCostBurnRateHigh
+        exp_alerts: []
+
+  # Exporter health, over 52 hours.
+  - interval: 1m
+    input_series:
+      - series: 'scaleway_exporter_build_info{version="test"}'
+        values: '1x3120'
+      # Billing fails from 3 h on.
+      - series: 'scaleway_exporter_source_up{source="billing"}'
+        values: '1x179 0x2940'
+      - series: 'scaleway_exporter_source_up{source="footprint"}'
+        values: '1x3120'
+      # Last billing success at 2 h.
+      - series: 'scaleway_exporter_source_last_success_timestamp_seconds{source="billing"}'
+        values: '0x59 3600x59 7200x3000'
+      # Last footprint success at 0 h.
+      - series: 'scaleway_exporter_source_last_success_timestamp_seconds{source="footprint"}'
+        values: '0x3120'
+      - series: 'scaleway_billing_last_update_timestamp_seconds{organization_id="org",billing_period="1970-01"}'
+        values: '0x3120'
+      # The series limit is hit at 3 h.
+      - series: 'scaleway_finops_series_limit_exceeded_total'
+        values: '0x179 1x2940'
+      # Non-EUR rows appear at 4 h.
+      - series: 'scaleway_exporter_source_errors_total{source="billing",reason="unexpected_currency"}'
+        values: '0x239 2x2880'
+    alert_rule_test:
+      - eval_time: 4h
+        alertname: ScalewayExporterSourceFailing
+        exp_alerts: []
+      - eval_time: 6h
+        alertname: ScalewayExporterSourceFailing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source: billing
+            exp_annotations:
+              summary: Scaleway exporter source billing is failing
+              description: The last refreshes of the billing source failed. Check scaleway_exporter_source_errors_total and the exporter logs.
+      # Billing is stale after 3 h without success (2 h + 3 h + 15 m hold).
+      - eval_time: 5h
+        alertname: ScalewayExporterDataStale
+        exp_alerts: []
+      - eval_time: 6h
+        alertname: ScalewayExporterDataStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source: billing
+            exp_annotations:
+              summary: Scaleway exporter data for billing is stale
+              description: The billing source has not refreshed successfully for 4h 0m 0s. The exported values are outdated.
+      # Footprint refreshes twice a day and tolerates 36 h.
+      - eval_time: 37h
+        alertname: ScalewayExporterDataStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source: billing
+            exp_annotations:
+              summary: Scaleway exporter data for billing is stale
+              description: The billing source has not refreshed successfully for 1d 11h 0m 0s. The exported values are outdated.
+          - exp_labels:
+              severity: warning
+              source: footprint
+            exp_annotations:
+              summary: Scaleway exporter data for footprint is stale
+              description: The footprint source has not refreshed successfully for 1d 13h 0m 0s. The exported values are outdated.
+      - eval_time: 10h
+        alertname: ScalewayExporterAbsent
+        exp_alerts: []
+      - eval_time: 48h
+        alertname: ScalewayBillingDataNotUpdated
+        exp_alerts: []
+      - eval_time: 50h
+        alertname: ScalewayBillingDataNotUpdated
+        exp_alerts:
+          - exp_labels:
+              severity: info
+              organization_id: org
+            exp_annotations:
+              summary: Scaleway has not updated billing data for two days
+              description: The consumption of organization org was last updated by Scaleway 2d 2h 0m 0s ago.
+      - eval_time: 4h
+        alertname: ScalewayFinOpsSeriesLimitReached
+        exp_alerts:
+          - exp_labels:
+              severity: info
+            exp_annotations:
+              summary: FinOps charges are aggregated under sku="other"
+              description: The number of FinOps charge series exceeds --finops.max-series. Increase the limit or disable --finops.per-resource. See scaleway_finops_folded_series.
+      - eval_time: 10h
+        alertname: ScalewayFinOpsSeriesLimitReached
+        exp_alerts: []
+      - eval_time: 5h
+        alertname: ScalewayUnexpectedCurrency
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source: billing
+              reason: unexpected_currency
+            exp_annotations:
+              summary: Scaleway billing data contains non-EUR amounts
+              description: Some billing amounts are not in EUR and are not exported. The euro totals are incomplete.
+
+  # The exporter is not scraped at all.
+  - interval: 1h
+    input_series:
+      - series: 'up{job="other"}'
+        values: '1x2'
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: ScalewayExporterAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: Scaleway exporter metrics are missing
+              description: No scaleway_exporter_build_info series is scraped. Is the exporter running and scraped?

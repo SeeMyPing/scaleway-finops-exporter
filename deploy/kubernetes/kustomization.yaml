@@ -1,0 +1,18 @@
+# Deploy with: kubectl apply -k deploy/kubernetes
+# Create the credentials secret first, see secret.example.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+labels:
+  - pairs:
+      app.kubernetes.io/name: scaleway-finops-exporter
+      app.kubernetes.io/part-of: monitoring
+    includeSelectors: true
+resources:
+  - serviceaccount.yaml
+  - deployment.yaml
+  - service.yaml
+  - servicemonitor.yaml
+images:
+  - name: ghcr.io/seemyping/scaleway-finops-exporter
+    newTag: latest # pin a released version, for example v0.1.0

@@ -1,0 +1,154 @@
+# Prometheus rules for scaleway-finops-exporter.
+#
+# Adjust scaleway:billing_monthly_budget_euros to your budget before use.
+# Test with: promtool test rules deploy/prometheus/rules_test.yml
+groups:
+  - name: scaleway-finops.rules
+    rules:
+      # Monthly budget, untaxed, in euros. Edit this value.
+      - record: scaleway:billing_monthly_budget_euros
+        expr: vector(1000)
+
+      # Untaxed consumption of the current billing period, per organization.
+      - record: scaleway:billing_consumption_euros:current_period
+        expr: |
+          sum by (organization_id) (
+            scaleway_billing_consumption_euros
+            and on (billing_period) scaleway_billing_period_info{offset="0"}
+          )
+
+      # Fraction of the current billing period elapsed, between 0 and 1.
+      - record: scaleway:billing_period_elapsed:ratio
+        expr: |
+          max(
+            clamp(
+              (time() - scaleway_billing_period_start_timestamp_seconds)
+              / (scaleway_billing_period_end_timestamp_seconds - scaleway_billing_period_start_timestamp_seconds),
+              0, 1
+            )
+            and on (billing_period) scaleway_billing_period_info{offset="0"}
+          )
+
+      # Linear projection of the consumption at the end of the current period.
+      # Billing data lags behind real usage, so the projection is a lower bound.
+      - record: scaleway:billing_consumption_euros:projected_period_end
+        expr: |
+          scaleway:billing_consumption_euros:current_period
+          / on () group_left ()
+          clamp_min(scaleway:billing_period_elapsed:ratio, 0.01)
+
+  - name: scaleway-finops.alerts
+    rules:
+      - alert: ScalewayBudgetExceeded
+        expr: |
+          scaleway:billing_consumption_euros:current_period
+          > on () group_left ()
+          scaleway:billing_monthly_budget_euros
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: Scaleway monthly budget exceeded
+          description: >-
+            Organization {{ $labels.organization_id }} has consumed {{ $value | printf "%.2f" }} EUR
+            (untaxed) this billing period, above the monthly budget.
+
+      - alert: ScalewayBudgetForecastExceeded
+        expr: |
+          (
+            scaleway:billing_consumption_euros:projected_period_end
+            > on () group_left ()
+            scaleway:billing_monthly_budget_euros
+          )
+          and on () (scaleway:billing_period_elapsed:ratio > 0.2)
+        for: 6h
+        labels:
+          severity: warning
+        annotations:
+          summary: Scaleway consumption is on track to exceed the monthly budget
+          description: >-
+            At the current pace, organization {{ $labels.organization_id }} will consume about
+            {{ $value | printf "%.0f" }} EUR (untaxed) by the end of the billing period.
+
+      # Burn rate: spending more than twice the daily share of the budget.
+      # delta() is negative across a period change, so the new month never fires.
+      - alert: ScalewayCostBurnRateHigh
+        expr: |
+          delta(scaleway:billing_consumption_euros:current_period[1d])
+          > on () group_left ()
+          (2 * scaleway:billing_monthly_budget_euros / 30)
+        for: 3h
+        labels:
+          severity: warning
+        annotations:
+          summary: Scaleway daily spend is more than twice the daily budget
+          description: >-
+            Organization {{ $labels.organization_id }} consumed {{ $value | printf "%.2f" }} EUR
+            (untaxed) over the last 24 hours.
+
+      - alert: ScalewayExporterSourceFailing
+        expr: scaleway_exporter_source_up == 0
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: Scaleway exporter source {{ $labels.source }} is failing
+          description: >-
+            The last refreshes of the {{ $labels.source }} source failed. Check
+            scaleway_exporter_source_errors_total and the exporter logs.
+
+      - alert: ScalewayExporterDataStale
+        expr: |
+          (time() - scaleway_exporter_source_last_success_timestamp_seconds{source=~"billing|finops"} > 3 * 3600)
+          or
+          (time() - scaleway_exporter_source_last_success_timestamp_seconds{source="footprint"} > 36 * 3600)
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Scaleway exporter data for {{ $labels.source }} is stale
+          description: >-
+            The {{ $labels.source }} source has not refreshed successfully for
+            {{ $value | humanizeDuration }}. The exported values are outdated.
+
+      - alert: ScalewayExporterAbsent
+        expr: absent(scaleway_exporter_build_info)
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Scaleway exporter metrics are missing
+          description: No scaleway_exporter_build_info series is scraped. Is the exporter running and scraped?
+
+      # Scaleway itself has not updated the consumption data for two days.
+      - alert: ScalewayBillingDataNotUpdated
+        expr: |
+          time() - max by (organization_id) (scaleway_billing_last_update_timestamp_seconds) > 2 * 86400
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: Scaleway has not updated billing data for two days
+          description: >-
+            The consumption of organization {{ $labels.organization_id }} was last updated by Scaleway
+            {{ $value | humanizeDuration }} ago.
+
+      - alert: ScalewayFinOpsSeriesLimitReached
+        expr: increase(scaleway_finops_series_limit_exceeded_total[2h]) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: FinOps charges are aggregated under sku="other"
+          description: >-
+            The number of FinOps charge series exceeds --finops.max-series. Increase the limit or
+            disable --finops.per-resource. See scaleway_finops_folded_series.
+
+      - alert: ScalewayUnexpectedCurrency
+        expr: increase(scaleway_exporter_source_errors_total{reason="unexpected_currency"}[2h]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: Scaleway {{ $labels.source }} data contains non-EUR amounts
+          description: >-
+            Some {{ $labels.source }} amounts are not in EUR and are not exported. The euro totals are
+            incomplete.

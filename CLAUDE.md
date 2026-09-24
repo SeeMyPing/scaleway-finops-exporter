@@ -48,6 +48,29 @@ deploy/                        Kubernetes manifests, alert rules and their tests
 - Commits follow Conventional Commits (`feat(billing): ...`, `fix: ...`, `docs: ...`).
 - Non-obvious decisions go into a short ADR in `docs/adr/`.
 
+## Metrics
+
+- Prefix `scaleway_`, unit suffix, snake_case labels. Money is `_euros` (EUR
+  only, other currencies are skipped and counted), carbon `_grams` (CO2e),
+  water `_cubic_meters`, time `_timestamp_seconds`.
+- Amounts are cumulative per `billing_period="YYYY-MM"` (UTC month) and are
+  gauges. Never compute deltas or projections in the exporter: that is PromQL.
+- Every metric is documented in the README table. Golden files in
+  `internal/collector/testdata/` are checked by `promtool check metrics`.
+- promlinter cannot resolve descriptors stored in struct fields; that
+  specific message is excluded in `.golangci.yml`.
+
+## SDK pitfalls found so far (SDK v1.0.0-beta.37)
+
+- `scw.WithAllPages()` drops every non-list response field (`updated_at`,
+  `total_discount_untaxed_value`), and does not support page tokens (FinOps).
+  Adapters walk pages manually (ADR 0005).
+- `scw.NewClient` validation errors quote the secret key: redact them.
+- `ListTaxes` is organization-wide (no project, no category). `Charge` has
+  no category nor product (join with `scaleway_billing_sku_info` in PromQL).
+- Footprint values are `float32` in kgCO2e and m³; convert with
+  `scaledFloat32` to avoid float32 artifacts.
+
 ## Workflow
 
 ```
@@ -59,3 +82,11 @@ make ci           # everything the CI runs, except the image build and scan
 ```
 
 Run `make lint test-race` before every commit.
+
+- Go version: `go.mod` (`go 1.26.0`, `toolchain go1.26.8`). The Docker build
+  uses `GOTOOLCHAIN=local`, so bump the base image with the toolchain.
+- `govet` `shadow` is disabled on purpose (it flags `if err := ...`).
+- Actions are pinned by commit SHA with a version comment; resolve new SHAs
+  with `git ls-remote https://github.com/<owner>/<repo> 'refs/tags/<tag>^{}'`.
+- CI runs on pushes to `main` and on pull requests.
+- Default port: 10056.

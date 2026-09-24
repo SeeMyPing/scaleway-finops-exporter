@@ -170,7 +170,7 @@ func addSourceFlags(app *kingpin.Application, name, desc string, src *Source, in
 		Default("true").BoolVar(&src.Enabled)
 	app.Flag(name+".interval", fmt.Sprintf("Refresh interval of the %s source.", desc)).
 		Default(interval).DurationVar(&src.Interval)
-	app.Flag(name+".timeout", fmt.Sprintf("Timeout of one refresh of the %s source, including pagination.", desc)).
+	app.Flag(name+".timeout", fmt.Sprintf("Timeout of one refresh of the %s source, including every API call.", desc)).
 		Default(timeout).DurationVar(&src.Timeout)
 }
 

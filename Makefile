@@ -60,6 +60,10 @@ test: ## Run unit tests
 test-race: ## Run unit tests with the race detector
 	go test -race ./...
 
+.PHONY: test-integration
+test-integration: ## Run the integration tests against the real Scaleway API (needs SCW_* credentials)
+	go test -tags integration -run Integration -count=1 -v ./internal/scaleway/
+
 .PHONY: cover
 cover: ## Run tests with coverage on internal/ and enforce COVER_MIN
 	go test -race -covermode=atomic -coverprofile=coverage.out ./internal/...

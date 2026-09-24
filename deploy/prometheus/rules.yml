@@ -3,7 +3,12 @@
 # Adjust scaleway:billing_monthly_budget_euros to your budget before use.
 # Test with: promtool test rules deploy/prometheus/rules_test.yml
 groups:
-  - name: scaleway-finops.rules
+  # The budget alerts consume the recording rules, so they live in the same
+  # group: rules of a group are evaluated in order, and each one sees the
+  # results of the previous ones at the same timestamp. Across groups, the
+  # alerts could read recorded samples one full evaluation interval old,
+  # which fall out of the 5 minute lookback when the interval is 5 minutes.
+  - name: scaleway-finops.budget
     rules:
       # Monthly budget, untaxed, in euros. Edit this value.
       - record: scaleway:billing_monthly_budget_euros
@@ -37,8 +42,6 @@ groups:
           / on () group_left ()
           clamp_min(scaleway:billing_period_elapsed:ratio, 0.01)
 
-  - name: scaleway-finops.alerts
-    rules:
       - alert: ScalewayBudgetExceeded
         expr: |
           scaleway:billing_consumption_euros:current_period
@@ -86,6 +89,8 @@ groups:
             Organization {{ $labels.organization_id }} consumed {{ $value | printf "%.2f" }} EUR
             (untaxed) over the last 24 hours.
 
+  - name: scaleway-finops.exporter
+    rules:
       - alert: ScalewayExporterSourceFailing
         expr: scaleway_exporter_source_up == 0
         for: 2h

@@ -1,0 +1,98 @@
+# GoReleaser configuration: binaries, archives, checksums, SBOMs and keyless
+# signatures. Container images are built by the release workflow with the
+# repository Dockerfile, so that CI and releases share a single image recipe.
+version: 2
+
+project_name: scaleway-finops-exporter
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+builds:
+  - id: scaleway-finops-exporter
+    main: ./cmd/scaleway-finops-exporter
+    binary: scaleway-finops-exporter
+    env:
+      - CGO_ENABLED=0
+      - GOTOOLCHAIN=local
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    ldflags:
+      - -s -w
+      - -X github.com/prometheus/common/version.Version={{ .Version }}
+      - -X github.com/prometheus/common/version.Revision={{ .FullCommit }}
+      - -X github.com/prometheus/common/version.Branch={{ .Branch }}
+      - -X github.com/prometheus/common/version.BuildUser=goreleaser
+      - -X github.com/prometheus/common/version.BuildDate={{ .CommitDate }}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+sboms:
+  - id: archives
+    artifacts: archive
+
+signs:
+  # Keyless signature of the checksums file with the GitHub OIDC identity of
+  # the release workflow. Verify with cosign verify-blob --bundle.
+  - id: checksums
+    cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - --yes
+      - --bundle=${signature}
+      - ${artifact}
+    output: true
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]-]+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\([[:word:]-]+\))??!?:.+$'
+      order: 1
+    - title: Security
+      regexp: '^.*?sec(\([[:word:]-]+\))??!?:.+$'
+      order: 2
+    - title: Other changes
+      order: 999
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore\(deps\):'
+
+release:
+  github:
+    owner: SeeMyPing
+    name: scaleway-finops-exporter
+  draft: false
+  prerelease: auto
+  footer: |
+    ## Container image
+
+    ```
+    docker pull ghcr.io/seemyping/scaleway-finops-exporter:{{ .Version }}
+    ```
+
+    The image and the checksums file are signed keylessly with cosign.

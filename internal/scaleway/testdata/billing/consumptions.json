@@ -1,0 +1,67 @@
+{
+  "consumptions": [
+    {
+      "value": {"currency_code": "EUR", "units": 12, "nanos": 340000000},
+      "product_name": "Instances DEV1-S",
+      "resource_name": "DEV1-S",
+      "sku": "/compute/dev1_s/run_par1",
+      "project_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "category_name": "Compute",
+      "unit": "hour",
+      "billed_quantity": "720",
+      "consumer_id": "11111111-0000-4000-8000-000000000000",
+      "project_name": "production",
+      "organization_name": "Example Org"
+    },
+    {
+      "value": {"currency_code": "EUR", "units": 3, "nanos": 500000000},
+      "product_name": "Instances DEV1-S",
+      "resource_name": "DEV1-S",
+      "sku": "/compute/dev1_s/run_ams1",
+      "project_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "category_name": "Compute",
+      "unit": "hour",
+      "billed_quantity": "175",
+      "consumer_id": "11111111-0000-4000-8000-000000000000",
+      "project_name": "production",
+      "organization_name": "Example Org"
+    },
+    {
+      "value": {"currency_code": "EUR", "units": 0, "nanos": 870000000},
+      "product_name": "Object Storage Standard",
+      "resource_name": "Standard",
+      "sku": "/storage/object/standard_par",
+      "project_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "category_name": "Storage",
+      "unit": "GB-month",
+      "billed_quantity": "58",
+      "consumer_id": "11111111-0000-4000-8000-000000000000",
+      "project_name": "staging",
+      "organization_name": "Example Org"
+    },
+    {
+      "value": {"currency_code": "EUR", "units": -1, "nanos": -250000000},
+      "product_name": "Credit",
+      "resource_name": "Credit",
+      "sku": "/billing/credit",
+      "project_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "category_name": "Other",
+      "unit": "unit",
+      "billed_quantity": "1",
+      "consumer_id": "11111111-0000-4000-8000-000000000000",
+      "project_name": "staging",
+      "organization_name": "Example Org"
+    },
+    {
+      "product_name": "Public Gateway VPC-GW-S",
+      "sku": "/network/vpc_gw_s/run_par1",
+      "project_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "category_name": "Network",
+      "consumer_id": "11111111-0000-4000-8000-000000000000",
+      "project_name": "staging"
+    }
+  ],
+  "total_count": 5,
+  "total_discount_untaxed_value": -2.5,
+  "updated_at": "2026-09-24T06:00:00Z"
+}

@@ -49,6 +49,8 @@ linters:
       disable:
         # Field alignment optimisation is not worth the readability cost here.
         - fieldalignment
+        # Flags the idiomatic `if err := f(); err != nil` whenever an outer err exists.
+        - shadow
     errcheck:
       check-type-assertions: true
     exhaustive:
@@ -120,6 +122,12 @@ linters:
           - wrapcheck
           - forcetypeassert
           - gosec
+      # promlinter cannot statically resolve descriptors stored in struct fields.
+      # Those metrics are linted at runtime by testutil.CollectAndLint and
+      # promtool check metrics instead.
+      - linters:
+          - promlinter
+        text: "parsing desc of type"
 
 formatters:
   enable:

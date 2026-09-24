@@ -1,0 +1,25 @@
+# HELP scaleway_billing_consumption_euros Untaxed consumption of the billing period so far, as shown on the invoice, in euros.
+# TYPE scaleway_billing_consumption_euros gauge
+scaleway_billing_consumption_euros{billing_period="2026-08",category="Compute",organization_id="11111111-0000-4000-8000-000000000000",product="Instances DEV1-S",project_id="aaaaaaaa-0000-4000-8000-000000000001",project_name="production"} 40
+scaleway_billing_consumption_euros{billing_period="2026-09",category="Compute",organization_id="11111111-0000-4000-8000-000000000000",product="Instances DEV1-S",project_id="aaaaaaaa-0000-4000-8000-000000000001",project_name="production"} 15.84
+scaleway_billing_consumption_euros{billing_period="2026-09",category="Other",organization_id="11111111-0000-4000-8000-000000000000",product="Credit",project_id="aaaaaaaa-0000-4000-8000-000000000002",project_name="staging"} -1.25
+scaleway_billing_consumption_euros{billing_period="2026-09",category="Storage",organization_id="11111111-0000-4000-8000-000000000000",product="Object Storage",project_id="aaaaaaaa-0000-4000-8000-000000000002",project_name="staging"} 0.37
+# HELP scaleway_billing_discount_euros Organization-wide untaxed discounts of the billing period, in euros, as reported by the API.
+# TYPE scaleway_billing_discount_euros gauge
+scaleway_billing_discount_euros{billing_period="2026-08",organization_id="11111111-0000-4000-8000-000000000000"} 0
+scaleway_billing_discount_euros{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000"} -2.5
+# HELP scaleway_billing_last_update_timestamp_seconds Unix timestamp of the last update of the billing period data by Scaleway.
+# TYPE scaleway_billing_last_update_timestamp_seconds gauge
+scaleway_billing_last_update_timestamp_seconds{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000"} 1.7902299e+09
+# HELP scaleway_billing_sku_info Category, product and billing unit of a SKU. Join on sku to enrich FinOps charges.
+# TYPE scaleway_billing_sku_info gauge
+scaleway_billing_sku_info{category="Compute",product="Instances DEV1-S",sku="/compute/dev1_s/par1",unit="hour"} 1
+scaleway_billing_sku_info{category="Other",product="Credit",sku="/billing/credit",unit="unit"} 1
+scaleway_billing_sku_info{category="Storage",product="Object Storage",sku="/storage/object/par",unit="GB-month"} 1
+# HELP scaleway_billing_tax_euros Taxes of the billing period so far, in euros.
+# TYPE scaleway_billing_tax_euros gauge
+scaleway_billing_tax_euros{billing_period="2026-09",description="Other tax",organization_id="11111111-0000-4000-8000-000000000000"} 0.12
+scaleway_billing_tax_euros{billing_period="2026-09",description="VAT FR",organization_id="11111111-0000-4000-8000-000000000000"} 3.09
+# HELP scaleway_billing_tax_rate_ratio Rate of a tax (0.2 means 20 %).
+# TYPE scaleway_billing_tax_rate_ratio gauge
+scaleway_billing_tax_rate_ratio{billing_period="2026-09",description="VAT FR",organization_id="11111111-0000-4000-8000-000000000000"} 0.2

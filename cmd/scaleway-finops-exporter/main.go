@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,8 +19,12 @@ import (
 	"github.com/prometheus/common/version"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/SeeMyPing/scaleway-finops-exporter/internal/collector"
 	"github.com/SeeMyPing/scaleway-finops-exporter/internal/config"
+	"github.com/SeeMyPing/scaleway-finops-exporter/internal/refresher"
+	"github.com/SeeMyPing/scaleway-finops-exporter/internal/scaleway"
 	"github.com/SeeMyPing/scaleway-finops-exporter/internal/server"
+	"github.com/SeeMyPing/scaleway-finops-exporter/internal/source/billing"
 )
 
 func main() {
@@ -50,11 +55,36 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		versioncollector.NewCollector("scaleway_exporter"),
 	)
+	metrics, err := refresher.NewMetrics(reg)
+	if err != nil {
+		return err
+	}
+
+	client, err := scaleway.NewClient(scaleway.ClientConfig{
+		OrganizationID: cfg.Scaleway.OrganizationID,
+		Profile:        cfg.Scaleway.Profile,
+		SecretKeyFile:  cfg.Scaleway.SecretKeyFile,
+		HTTPTimeout:    cfg.Scaleway.HTTPTimeout,
+		UserAgent:      config.AppName + "/" + version.Version,
+	})
+	if err != nil {
+		return err
+	}
+	logger.Info("using Scaleway organization", "organization_id", client.OrganizationID,
+		"project_filter", cfg.Scaleway.ProjectIDs)
+
+	w := &wiring{reg: reg, metrics: metrics, logger: logger}
+
+	if cfg.Billing.Enabled {
+		if err := setupBilling(w, cfg, client); err != nil {
+			return err
+		}
+	}
 
 	handler, err := server.NewHandler(server.Options{
 		TelemetryPath: cfg.Web.TelemetryPath,
 		Registry:      reg,
-		Ready:         func() bool { return false },
+		Ready:         w.ready,
 		Version:       version.Version,
 		Logger:        logger,
 	})
@@ -62,7 +92,12 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		return fmt.Errorf("creating HTTP handler: %w", err)
 	}
 
+	// errgroup cancels ctx as soon as one goroutine returns an error, which
+	// stops every other component: a failing HTTP server stops the refreshers.
 	g, ctx := errgroup.WithContext(ctx)
+	for _, runner := range w.runners {
+		g.Go(func() error { return runner(ctx) })
+	}
 	g.Go(func() error {
 		return server.Run(ctx, handler, cfg.Web.Toolkit, cfg.Web.ShutdownTimeout, logger)
 	})
@@ -71,5 +106,65 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		return fmt.Errorf("exporter stopped: %w", err)
 	}
 	logger.Info("exporter stopped")
+	return nil
+}
+
+// wiring collects the background runners and readiness checks of the sources.
+type wiring struct {
+	reg        *prometheus.Registry
+	metrics    *refresher.Metrics
+	logger     *slog.Logger
+	runners    []func(context.Context) error
+	readyFuncs []func() bool
+}
+
+// ready reports whether at least one enabled source has published a snapshot.
+func (w *wiring) ready() bool {
+	for _, ready := range w.readyFuncs {
+		if ready() {
+			return true
+		}
+	}
+	return false
+}
+
+// addSource creates the refresher of a source and schedules it.
+func addSource[T any](w *wiring, name string, src config.Source, fetch func(context.Context) (*T, error)) (*refresher.Refresher[T], error) {
+	r, err := refresher.New(refresher.Options[T]{
+		Name:     name,
+		Fetch:    fetch,
+		Interval: src.Interval,
+		Timeout:  src.Timeout,
+		Classify: scaleway.Classify,
+		Metrics:  w.metrics,
+		Logger:   w.logger,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("creating %s refresher: %w", name, err)
+	}
+	w.runners = append(w.runners, r.Run)
+	w.readyFuncs = append(w.readyFuncs, r.Ready)
+	w.logger.Info("source enabled", "data_source", name, "interval", src.Interval, "timeout", src.Timeout)
+	return r, nil
+}
+
+func setupBilling(w *wiring, cfg *config.Config, client *scaleway.Client) error {
+	src, err := billing.New(scaleway.NewBilling(client), billing.Options{
+		OrganizationID:  client.OrganizationID,
+		ProjectIDs:      cfg.Scaleway.ProjectIDs,
+		LookbackPeriods: cfg.Billing.LookbackPeriods,
+		SkippedRows:     w.metrics.ErrorCounter("billing", billing.ReasonUnexpectedCurrency),
+		Logger:          w.logger.With("data_source", "billing"),
+	})
+	if err != nil {
+		return err
+	}
+	r, err := addSource(w, "billing", cfg.Billing.Source, src.Fetch)
+	if err != nil {
+		return err
+	}
+	if err := w.reg.Register(collector.NewBilling(r)); err != nil {
+		return fmt.Errorf("registering billing collector: %w", err)
+	}
 	return nil
 }

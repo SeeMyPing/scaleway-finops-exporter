@@ -38,7 +38,8 @@ deploy/                        Kubernetes manifests, alert rules and their tests
 
 - Small interfaces, declared by the consumer package.
 - Errors are wrapped with `fmt.Errorf("...: %w", err)` at package boundaries.
-- Logging uses `log/slog` with snake_case attribute keys and static messages.
+- Logging uses `log/slog` with snake_case attribute keys and static messages. Never use
+  the `source` key: promslog uses it for the caller location. Use `data_source`.
 - Tests are table-driven, use `t.Parallel()` when safe, and never call `time.Sleep`:
   time-dependent code is tested with `testing/synctest`.
 - SDK adapters are tested against `httptest.Server` fixtures in `testdata/`.

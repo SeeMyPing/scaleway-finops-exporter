@@ -1,0 +1,9 @@
+{
+  "taxes": [
+    {"description": "VAT FR", "currency": "EUR", "rate": 0.2, "total_tax_value": 3.09},
+    {"description": "Digital services tax", "currency": "EUR", "total_tax_value": 0.12},
+    {"description": "Pending tax", "currency": "EUR"}
+  ],
+  "total_count": 3,
+  "updated_at": "2026-09-24T06:05:00Z"
+}

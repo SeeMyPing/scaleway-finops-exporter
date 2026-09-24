@@ -140,7 +140,7 @@ func (r *Refresher[T]) Run(ctx context.Context) error {
 		} else {
 			failures++
 			delay = r.jitter(r.backoff(failures))
-			r.opts.Logger.Warn("refresh failed", "source", r.opts.Name, "err", err, "retry_in", delay)
+			r.opts.Logger.Warn("refresh failed", "data_source", r.opts.Name, "err", err, "retry_in", delay)
 		}
 
 		timer := time.NewTimer(delay)
@@ -183,7 +183,7 @@ func (r *Refresher[T]) refresh(ctx context.Context) error {
 	r.snapshot.Store(snap)
 	m.up.WithLabelValues(r.opts.Name).Set(1)
 	m.lastSuccess.WithLabelValues(r.opts.Name).Set(float64(time.Now().Unix()))
-	r.opts.Logger.Debug("refresh succeeded", "source", r.opts.Name, "duration", time.Since(start))
+	r.opts.Logger.Debug("refresh succeeded", "data_source", r.opts.Name, "duration", time.Since(start))
 	return nil
 }
 

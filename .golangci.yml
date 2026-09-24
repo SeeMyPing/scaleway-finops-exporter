@@ -1,0 +1,133 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    # Correctness
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - nilerr
+    - errorlint
+    - wrapcheck
+    - contextcheck
+    - bodyclose
+    - noctx
+    - forcetypeassert
+    - fatcontext
+    - exhaustive
+    # Security
+    - gosec
+    # Style and maintainability
+    - revive
+    - gocritic
+    - misspell
+    - nolintlint
+    - unconvert
+    - usestdlibvars
+    - copyloopvar
+    - intrange
+    - errname
+    - sloglint
+    - perfsprint
+    # Tests
+    - thelper
+    - tparallel
+    - usetesting
+    # Prometheus metric naming
+    - promlinter
+
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        # Field alignment optimisation is not worth the readability cost here.
+        - fieldalignment
+    errcheck:
+      check-type-assertions: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - hugeParam # snapshots are passed by pointer already; remaining cases are small config structs
+        - unnamedResult
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: increment-decrement
+        - name: var-naming
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+    sloglint:
+      no-mixed-args: true
+      kv-only: false
+      attr-only: true
+      static-msg: true
+      key-naming-case: snake
+    wrapcheck:
+      # Errors from our own packages are already wrapped with context where they originate.
+      ignore-package-globs:
+        - github.com/SeeMyPing/scaleway-finops-exporter/*
+      ignore-sigs:
+        - .Errorf(
+        - errors.New(
+        - errors.Join(
+        - .Wrap(
+        - .Wrapf(
+        - context.Cause(
+    promlinter:
+      strict: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    misspell:
+      locale: US
+
+  exclusions:
+    generated: strict
+    presets:
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters:
+          - wrapcheck
+          - forcetypeassert
+          - gosec
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    gofumpt:
+      extra-rules: true
+    goimports:
+      local-prefixes:
+        - github.com/SeeMyPing/scaleway-finops-exporter

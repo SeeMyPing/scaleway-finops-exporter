@@ -1,0 +1,19 @@
+# Build output
+/bin/
+/dist/
+
+# Test and coverage artifacts
+coverage.out
+coverage.html
+*.test
+/testdata/out/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Local credentials must never be committed
+*.secret
+.env

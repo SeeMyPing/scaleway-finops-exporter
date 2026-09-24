@@ -1,0 +1,15 @@
+# HELP scaleway_billing_period_end_timestamp_seconds Unix timestamp of the end of the billing period (exclusive, UTC).
+# TYPE scaleway_billing_period_end_timestamp_seconds gauge
+scaleway_billing_period_end_timestamp_seconds{billing_period="2025-10"} 1.7619552e+09
+scaleway_billing_period_end_timestamp_seconds{billing_period="2025-11"} 1.7645472e+09
+scaleway_billing_period_end_timestamp_seconds{billing_period="2025-12"} 1.7672256e+09
+# HELP scaleway_billing_period_info Billing periods exported by this exporter. offset is 0 for the current period, 1 for the previous one, and so on. Select the current period with: and on(billing_period) scaleway_billing_period_info{offset="0"}
+# TYPE scaleway_billing_period_info gauge
+scaleway_billing_period_info{billing_period="2025-10",offset="2"} 1
+scaleway_billing_period_info{billing_period="2025-11",offset="1"} 1
+scaleway_billing_period_info{billing_period="2025-12",offset="0"} 1
+# HELP scaleway_billing_period_start_timestamp_seconds Unix timestamp of the start of the billing period (inclusive, UTC).
+# TYPE scaleway_billing_period_start_timestamp_seconds gauge
+scaleway_billing_period_start_timestamp_seconds{billing_period="2025-10"} 1.7592768e+09
+scaleway_billing_period_start_timestamp_seconds{billing_period="2025-11"} 1.7619552e+09
+scaleway_billing_period_start_timestamp_seconds{billing_period="2025-12"} 1.7645472e+09

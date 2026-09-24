@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -76,6 +77,13 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		"project_filter", cfg.Scaleway.ProjectIDs)
 
 	w := &wiring{reg: reg, metrics: metrics, logger: logger}
+
+	// The periods collector only reads the clock; it lets PromQL select the
+	// current billing_period for every source.
+	lookback := max(cfg.Billing.LookbackPeriods, cfg.FinOps.LookbackPeriods, cfg.Footprint.LookbackPeriods)
+	if err := reg.Register(collector.NewPeriods(time.Now, lookback)); err != nil {
+		return fmt.Errorf("registering periods collector: %w", err)
+	}
 
 	if cfg.Billing.Enabled {
 		if err := setupBilling(w, cfg, client); err != nil {

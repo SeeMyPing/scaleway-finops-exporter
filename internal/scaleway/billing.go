@@ -145,8 +145,7 @@ func paginate(fetch func(page int32) (items int, total uint64, err error)) error
 	return fmt.Errorf("pagination did not end after %d pages", maxPages)
 }
 
-// money converts an SDK amount. A missing amount is zero with no currency,
-// which the source then rejects as an unexpected currency.
+// money converts an SDK amount. A missing amount is zero with no currency.
 func money(m *scw.Money) billing.Money {
 	if m == nil {
 		return billing.Money{}

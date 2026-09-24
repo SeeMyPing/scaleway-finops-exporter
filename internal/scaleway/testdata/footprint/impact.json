@@ -1,0 +1,72 @@
+{
+  "start_date": "2026-09-01T00:00:00Z",
+  "end_date": "2026-09-24T00:00:00Z",
+  "total_impact": {"kg_co2_equivalent": 12.723, "m3_water_usage": 0.0431},
+  "projects": [
+    {
+      "project_id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "total_project_impact": {"kg_co2_equivalent": 12.123, "m3_water_usage": 0.0411},
+      "regions": [
+        {
+          "region": "fr-par",
+          "total_region_impact": {"kg_co2_equivalent": 12.123, "m3_water_usage": 0.0411},
+          "skus": [
+            {
+              "sku": "/storage/object/standard_par",
+              "total_sku_impact": {"kg_co2_equivalent": 0.123, "m3_water_usage": 0.0011},
+              "service_category": "storage",
+              "product_category": "object_storage"
+            }
+          ],
+          "zones": [
+            {
+              "zone": "fr-par-1",
+              "total_zone_impact": {"kg_co2_equivalent": 12, "m3_water_usage": 0.04},
+              "skus": [
+                {
+                  "sku": "/compute/dev1_s/run_par1",
+                  "total_sku_impact": {"kg_co2_equivalent": 10.5, "m3_water_usage": 0.035},
+                  "service_category": "compute",
+                  "product_category": "instances"
+                },
+                {
+                  "sku": "/compute/dev1_m/run_par1",
+                  "total_sku_impact": {"kg_co2_equivalent": 1.5, "m3_water_usage": 0.005},
+                  "service_category": "compute",
+                  "product_category": "instances"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "project_id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "total_project_impact": {"kg_co2_equivalent": 0.6, "m3_water_usage": 0.002},
+      "regions": [
+        {
+          "region": "nl-ams",
+          "zones": [
+            {
+              "zone": "nl-ams-1",
+              "skus": [
+                {
+                  "sku": "/database/rdb/db_dev_s_ams1",
+                  "total_sku_impact": {"kg_co2_equivalent": 0.6, "m3_water_usage": 0.002},
+                  "service_category": "databases",
+                  "product_category": "managed_relational_databases"
+                },
+                {
+                  "sku": "/new/product/without_impact",
+                  "service_category": "unknown_service_category",
+                  "product_category": "unknown_product_category"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

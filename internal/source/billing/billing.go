@@ -200,7 +200,7 @@ func (s *Source) aggregate(period string, c *ConsumptionReport, t *TaxReport, sk
 		if len(s.projects) > 0 && !s.projects[row.ProjectID] {
 			continue
 		}
-		if !s.acceptCurrency(row.Value.Currency, period, "consumption") {
+		if !s.acceptCurrency(row.Value, period, "consumption") {
 			continue
 		}
 		org := row.OrganizationID
@@ -230,7 +230,7 @@ func (s *Source) aggregate(period string, c *ConsumptionReport, t *TaxReport, sk
 
 	taxes := map[string]*TaxSeries{}
 	for _, tax := range t.Taxes {
-		if !s.acceptCurrency(tax.Value.Currency, period, "tax") {
+		if !s.acceptCurrency(tax.Value, period, "tax") {
 			continue
 		}
 		ts, ok := taxes[tax.Description]
@@ -248,13 +248,16 @@ func (s *Source) aggregate(period string, c *ConsumptionReport, t *TaxReport, sk
 	return p
 }
 
-func (s *Source) acceptCurrency(currency, period, kind string) bool {
-	if currency == Currency {
+// acceptCurrency reports whether an amount can be added to euro series.
+// A zero amount is always accepted: the API omits the value (and thus the
+// currency) of free usage, and a zero changes no sum whatever its currency.
+func (s *Source) acceptCurrency(m Money, period, kind string) bool {
+	if m.Currency == Currency || m.Amount == 0 {
 		return true
 	}
 	s.opts.SkippedRows.Inc()
 	s.opts.Logger.Warn("skipping row with unexpected currency",
-		"kind", kind, "billing_period", period, "currency", currency, "expected", Currency)
+		"kind", kind, "billing_period", period, "currency", m.Currency, "expected", Currency)
 	return false
 }
 

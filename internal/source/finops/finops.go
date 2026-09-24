@@ -154,7 +154,8 @@ func (s *Source) aggregate(period string, charges []Charge) Period {
 		if c.UpdatedAt.After(p.UpdatedAt) {
 			p.UpdatedAt = c.UpdatedAt
 		}
-		if c.Currency != Currency {
+		// Zero amounts are accepted whatever their currency, see the billing source.
+		if c.Currency != Currency && c.Amount != 0 {
 			s.opts.SkippedCharges.Inc()
 			s.opts.Logger.Warn("skipping charge with unexpected currency",
 				"billing_period", period, "currency", c.Currency, "expected", Currency)

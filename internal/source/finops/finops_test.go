@@ -282,9 +282,11 @@ func TestFetchSkipsUnexpectedCurrencies(t *testing.T) {
 
 	usd := charge(prod, "/a", "", 3)
 	usd.Currency = "USD"
-	missing := charge(prod, "/a", "", 0)
-	missing.Currency = ""
-	s, c := newSource(t, &fakeAPI{charges: map[string][]Charge{"2026-09": {charge(prod, "/a", "", 1), usd, missing}}}, nil)
+	gbp := charge(prod, "/a", "", -2)
+	gbp.Currency = "GBP"
+	free := charge(prod, "/a", "", 0)
+	free.Currency = "" // free usage has no price at all: accepted
+	s, c := newSource(t, &fakeAPI{charges: map[string][]Charge{"2026-09": {charge(prod, "/a", "", 1), usd, gbp, free}}}, nil)
 
 	got, err := s.Fetch(t.Context())
 	if err != nil {

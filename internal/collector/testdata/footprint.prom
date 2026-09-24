@@ -1,0 +1,20 @@
+# HELP scaleway_footprint_carbon_grams Estimated carbon emissions of the month, in grams of CO2 equivalent. The current month covers the complete days elapsed so far.
+# TYPE scaleway_footprint_carbon_grams gauge
+scaleway_footprint_carbon_grams{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000",product_category="instances",project_id="aaaaaaaa-0000-4000-8000-000000000001",region="fr-par",service_category="compute",zone="fr-par-1"} 12000
+scaleway_footprint_carbon_grams{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000",product_category="object_storage",project_id="aaaaaaaa-0000-4000-8000-000000000001",region="fr-par",service_category="storage",zone=""} 123
+# HELP scaleway_footprint_daily_carbon_grams Estimated carbon emissions of the last complete day selected by --footprint.daily-offset-days, in grams of CO2 equivalent.
+# TYPE scaleway_footprint_daily_carbon_grams gauge
+scaleway_footprint_daily_carbon_grams{organization_id="11111111-0000-4000-8000-000000000000",product_category="instances",project_id="aaaaaaaa-0000-4000-8000-000000000001",region="fr-par",service_category="compute",zone="fr-par-1"} 520
+# HELP scaleway_footprint_daily_water_cubic_meters Estimated water consumption of the last complete day selected by --footprint.daily-offset-days, in cubic meters.
+# TYPE scaleway_footprint_daily_water_cubic_meters gauge
+scaleway_footprint_daily_water_cubic_meters{organization_id="11111111-0000-4000-8000-000000000000",product_category="instances",project_id="aaaaaaaa-0000-4000-8000-000000000001",region="fr-par",service_category="compute",zone="fr-par-1"} 0.0017
+# HELP scaleway_footprint_daily_window_start_timestamp_seconds Unix timestamp of the start of the day covered by the daily footprint metrics.
+# TYPE scaleway_footprint_daily_window_start_timestamp_seconds gauge
+scaleway_footprint_daily_window_start_timestamp_seconds{organization_id="11111111-0000-4000-8000-000000000000"} 1.7901216e+09
+# HELP scaleway_footprint_period_end_timestamp_seconds Unix timestamp of the (exclusive) end of the data covered by the monthly footprint metrics.
+# TYPE scaleway_footprint_period_end_timestamp_seconds gauge
+scaleway_footprint_period_end_timestamp_seconds{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000"} 1.790208e+09
+# HELP scaleway_footprint_water_cubic_meters Estimated water consumption of the month, in cubic meters. The current month covers the complete days elapsed so far.
+# TYPE scaleway_footprint_water_cubic_meters gauge
+scaleway_footprint_water_cubic_meters{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000",product_category="instances",project_id="aaaaaaaa-0000-4000-8000-000000000001",region="fr-par",service_category="compute",zone="fr-par-1"} 0.04
+scaleway_footprint_water_cubic_meters{billing_period="2026-09",organization_id="11111111-0000-4000-8000-000000000000",product_category="object_storage",project_id="aaaaaaaa-0000-4000-8000-000000000001",region="fr-par",service_category="storage",zone=""} 0.0011

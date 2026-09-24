@@ -26,6 +26,7 @@ import (
 	"github.com/SeeMyPing/scaleway-finops-exporter/internal/server"
 	"github.com/SeeMyPing/scaleway-finops-exporter/internal/source/billing"
 	"github.com/SeeMyPing/scaleway-finops-exporter/internal/source/finops"
+	"github.com/SeeMyPing/scaleway-finops-exporter/internal/source/footprint"
 )
 
 func main() {
@@ -83,6 +84,11 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	}
 	if cfg.FinOps.Enabled {
 		if err := setupFinOps(w, cfg, client); err != nil {
+			return err
+		}
+	}
+	if cfg.Footprint.Enabled {
+		if err := setupFootprint(w, cfg, client); err != nil {
 			return err
 		}
 	}
@@ -203,6 +209,27 @@ func setupFinOps(w *wiring, cfg *config.Config, client *scaleway.Client) error {
 	}
 	if err := w.reg.Register(collector.NewFinOps(r, cfg.FinOps.PerResource)); err != nil {
 		return fmt.Errorf("registering FinOps collector: %w", err)
+	}
+	return nil
+}
+
+func setupFootprint(w *wiring, cfg *config.Config, client *scaleway.Client) error {
+	src, err := footprint.New(scaleway.NewFootprint(client), footprint.Options{
+		OrganizationID:  client.OrganizationID,
+		ProjectIDs:      cfg.Scaleway.ProjectIDs,
+		LookbackPeriods: cfg.Footprint.LookbackPeriods,
+		DailyOffsetDays: cfg.Footprint.DailyOffsetDays,
+		Logger:          w.logger.With("data_source", "footprint"),
+	})
+	if err != nil {
+		return err
+	}
+	r, err := addSource(w, "footprint", cfg.Footprint.Source, src.Fetch)
+	if err != nil {
+		return err
+	}
+	if err := w.reg.Register(collector.NewFootprint(r)); err != nil {
+		return fmt.Errorf("registering footprint collector: %w", err)
 	}
 	return nil
 }

@@ -213,7 +213,7 @@ func TestFetchSkipsUnexpectedCurrencies(t *testing.T) {
 		consumptions: map[string]*ConsumptionReport{"2026-09": {Consumptions: []Consumption{
 			consumption(prod, "production", "Compute", "Instances", "/a", eur(1)),
 			consumption(prod, "production", "Compute", "Instances", "/b", Money{Amount: 5, Currency: "USD"}),
-			consumption(prod, "production", "Compute", "Instances", "/c", Money{}), // missing value
+			consumption(prod, "production", "Compute", "Instances", "/c", Money{}), // free usage: no value, kept
 		}}},
 		taxes: map[string]*TaxReport{"2026-09": {Taxes: []Tax{
 			{Description: "VAT", Value: Money{Amount: 1, Currency: "GBP"}},
@@ -229,13 +229,16 @@ func TestFetchSkipsUnexpectedCurrencies(t *testing.T) {
 		t.Fatal(err)
 	}
 	if c := got.Periods[0].Consumption; len(c) != 1 || c[0].Euros != 1 {
-		t.Errorf("consumption = %+v, want only the EUR row", c)
+		t.Errorf("consumption = %+v, want the EUR row plus the zero one in a single series", c)
+	}
+	if len(got.SKUs) != 2 {
+		t.Errorf("SKUs = %+v, want /a and /c (the USD row is dropped)", got.SKUs)
 	}
 	if len(got.Periods[0].Taxes) != 0 {
 		t.Errorf("taxes = %+v, want none", got.Periods[0].Taxes)
 	}
-	if n := testutil.ToFloat64(skipped); n != 3 {
-		t.Errorf("skipped rows = %v, want 3", n)
+	if n := testutil.ToFloat64(skipped); n != 2 {
+		t.Errorf("skipped rows = %v, want 2 (USD and GBP)", n)
 	}
 	if !strings.Contains(logs.String(), "currency=USD") {
 		t.Errorf("logs do not mention the skipped currency: %s", logs.String())

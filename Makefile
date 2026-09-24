@@ -83,9 +83,12 @@ vuln: ## Check dependencies for known vulnerabilities
 	$(GOVULNCHECK) ./...
 
 .PHONY: metrics-check
-metrics-check: ## Lint the exposition generated from test fixtures with promtool
-	go test ./internal/collector -run TestExpositionFixture -update-exposition
-	$(PROMTOOL) check metrics < internal/collector/testdata/exposition.prom
+metrics-check: ## Lint the golden expositions generated from test fixtures with promtool
+	go test ./internal/collector
+	@for f in internal/collector/testdata/*.prom; do \
+		echo "promtool check metrics $$f"; \
+		$(PROMTOOL) check metrics < $$f || exit 1; \
+	done
 
 .PHONY: rules-test
 rules-test: ## Validate and unit test the Prometheus alerting rules

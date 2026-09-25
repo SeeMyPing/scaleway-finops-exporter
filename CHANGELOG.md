@@ -32,5 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dashboard.
 - Distroless non-root container image, signed multi-arch releases with SBOMs
   and SLSA provenance.
+- Multi-arch images built by GitHub Actions and published to the GitHub
+  Container Registry: `edge` and `sha-<commit>` on every push to `main`,
+  `X.Y.Z`, `X.Y` and `latest` on releases, all signed with cosign.
 
 [Unreleased]: https://github.com/SeeMyPing/scaleway-finops-exporter/commits/main

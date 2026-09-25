@@ -61,13 +61,25 @@ docker run --rm -p 10056:10056 \
   ghcr.io/seemyping/scaleway-finops-exporter:latest
 ```
 
-The image is `distroless/static` running as `nonroot` (UID 65532). It is signed
-with cosign; verify it with:
+Images for `linux/amd64` and `linux/arm64` are built by GitHub Actions and
+served by the GitHub Container Registry
+([`ghcr.io/seemyping/scaleway-finops-exporter`](https://github.com/SeeMyPing/scaleway-finops-exporter/pkgs/container/scaleway-finops-exporter)):
+
+| Tag | Content |
+|---|---|
+| `latest`, `X.Y.Z`, `X.Y` | Releases. `latest` skips pre-releases. |
+| `edge` | The last commit on `main`. |
+| `sha-<commit>` | A given commit on `main`. |
+
+Until the first release, use `edge`. Pin a version or a digest in production. The image is `distroless/static`
+running as `nonroot` (UID 65532). Every image is signed keylessly with cosign
+and has an SBOM and a SLSA provenance attestation; verify them with:
 
 ```sh
-cosign verify ghcr.io/seemyping/scaleway-finops-exporter:<version> \
-  --certificate-identity-regexp 'https://github.com/SeeMyPing/scaleway-finops-exporter/.github/workflows/release.yml@.*' \
+cosign verify ghcr.io/seemyping/scaleway-finops-exporter:<tag> \
+  --certificate-identity-regexp '^https://github.com/SeeMyPing/scaleway-finops-exporter/.github/workflows/image.yml@refs/(heads/main|tags/v.*)$' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify oci://ghcr.io/seemyping/scaleway-finops-exporter:<tag> --owner SeeMyPing
 ```
 
 ### Kubernetes

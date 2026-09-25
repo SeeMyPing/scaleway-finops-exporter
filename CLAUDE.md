@@ -88,5 +88,7 @@ Run `make lint test-race` before every commit.
 - `govet` `shadow` is disabled on purpose (it flags `if err := ...`).
 - Actions are pinned by commit SHA with a version comment; resolve new SHAs
   with `git ls-remote https://github.com/<owner>/<repo> 'refs/tags/<tag>^{}'`.
-- CI runs on pushes to `main` and on pull requests.
+- CI runs on pushes to `main` and on pull requests. `image.yml` publishes the
+  image to ghcr.io on pushes to `main` (`edge`, `sha-*`) and `v*` tags
+  (semver, `latest`); `release.yml` publishes the binaries on `v*` tags.
 - Default port: 10056.

@@ -2,7 +2,7 @@
 
 # Build stage: runs on the build platform and cross-compiles for the target,
 # which is much faster than emulating the target platform with QEMU.
-FROM --platform=$BUILDPLATFORM golang:1.27.1-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS build
 
 # Never download another toolchain: the image must match go.mod.
 ENV GOTOOLCHAIN=local CGO_ENABLED=0

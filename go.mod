@@ -10,8 +10,8 @@ require (
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/common v0.71.0
 	github.com/prometheus/exporter-toolkit v0.19.0
-	github.com/scaleway/scaleway-sdk-go v1.39.0
-	golang.org/x/sync v0.23.0
+	github.com/scaleway/scaleway-sdk-go v1.40.0
+	golang.org/x/sync v0.25.0
 )
 
 require (
@@ -35,8 +35,8 @@ require (
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
